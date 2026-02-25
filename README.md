@@ -8,13 +8,13 @@ The original paper by Shapley (1953) can be found here: https://doi.org/10.1515/
 In game theory, **Shapley Values** represent the contribution of a player \(i\), denoted \(\phi_i\), within a coalition \(S\) by comparing the outcomes of scenarios where the player is present \(v(S \cup \{i\})\) versus absent \(v(S)\):
 
 $$
-\phi_i = \sum_{S \subseteq N \setminus \{i\}} w(S)\,\bigl[\, v(S \cup \{i\}) - v(S) \,\bigr].
+\phi_i = \sum_{S \subseteq N \setminus \{i\}} w(S)\\bigl[\ v(S \cup \{i\}) - v(S) \\bigr].
 $$
 
 where
 
 $$
-w(S) = \frac{|S|!\, (|N| - |S| - 1)!}{|N|!},
+w(S) = \frac{|S|!\ (|N| - |S| - 1)!}{|N|!},
 $$
 
 weights the importance of the tested coalition \(S\). It is the probability that the set of players who come before \(i\) is exactly \(S\).
