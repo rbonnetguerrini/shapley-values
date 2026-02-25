@@ -47,6 +47,15 @@ $$
 = w(S).
 $$
 
+## Game theory properties
+
+Shapley Value satisfy these axioms:
+- **Efficiency**: sum of SVs = v(N) - v({})
+- **Symmetry**: symmetric players get equal values
+- **Null player**: non-contributing player gets SV = 0
+- **Additivity**: SV(v + w) = SV(v) + SV(w)
+
+
 # Repository 
 ## Installation
 
@@ -91,25 +100,17 @@ plot_shapley_bar(results["shapley_values"], results["player_labels"])
 - `compute(verbose=True)` — exact Shapley values via combinatorial formula (2^n coalitions)
 - `marginal_contributions()` — quick diagnostic: v({i}) - v({}) for each player
 
-### Plotting
+## Plotting
 
 - `plot_shapley_bar(sv, labels, ...)` — bar chart colored by sign
 - `plot_shapley_pie(sv, labels, ...)` — pie chart of |SV| proportions
 - `plot_shapley_comparison(results_list, ...)` — side-by-side comparison
 - `plot_marginal_contributions(deltas, labels, ...)` — bar chart of marginals
 
-### I/O
+## I/O
 
 - `save_results(results, path, metadata=None)` — save to JSON
 - `load_results(path)` — load from JSON
-
-## Game theory properties
-
-The implementation satisfies all Shapley axioms:
-- **Efficiency**: sum of SVs = v(N) - v({})
-- **Symmetry**: symmetric players get equal values
-- **Null player**: non-contributing player gets SV = 0
-- **Additivity**: SV(v + w) = SV(v) + SV(w)
 
 ## Example notebook
 
