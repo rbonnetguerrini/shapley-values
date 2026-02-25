@@ -3,11 +3,16 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# C extensions
+*.so
+
 # Distribution / packaging
 build/
 dist/
 *.egg-info/
 *.egg
+sdist/
+wheels/
 
 # Virtual environments
 .venv/
@@ -31,7 +36,8 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+.tox/
+.nox/
 
-# Results / outputs
-*.json
-!pyproject.toml
+# Type checking
+.mypy_cache/
