@@ -10,5 +10,3 @@ shapley_values.egg-info/SOURCES.txt
 shapley_values.egg-info/dependency_links.txt
 shapley_values.egg-info/requires.txt
 shapley_values.egg-info/top_level.txt
-tests/test_core.py
-tests/test_io.py
