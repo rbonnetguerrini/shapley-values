@@ -1,0 +1,87 @@
+Metadata-Version: 2.4
+Name: shapley-values
+Version: 0.1.0
+Summary: Exact Shapley value computation for cooperative game theory
+License: MIT
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: numpy>=1.21
+Requires-Dist: matplotlib>=3.4
+Provides-Extra: test
+Requires-Dist: pytest>=7.0; extra == "test"
+Dynamic: license-file
+
+# shapley-values
+
+Problem-agnostic exact Shapley value computation for cooperative game theory.
+
+## Installation
+
+```bash
+pip install -e .
+```
+
+## Quick start
+
+```python
+from shapley_values import ExactShapley, plot_shapley_bar
+
+# Define a value function: coalition (list of player indices) -> scalar
+def value_function(coalition):
+    """Example: each player contributes their weight."""
+    weights = [3.0, 1.0, 2.0, 4.0]
+    return sum(weights[i] for i in coalition)
+
+# Compute exact Shapley values
+sv = ExactShapley(
+    n_players=4,
+    value_function=value_function,
+    player_labels=["Alice", "Bob", "Carol", "Dave"],
+)
+results = sv.compute()
+
+# Visualize
+plot_shapley_bar(results["shapley_values"], results["player_labels"])
+```
+
+## API
+
+### `ExactShapley(n_players, value_function, player_labels=None, player_short=None)`
+
+- `n_players`: number of players
+- `value_function`: callable `f(List[int]) -> float` mapping a coalition to a scalar value
+- `player_labels`: human-readable names (optional)
+- `player_short`: short names for plots (optional, defaults to `player_labels`)
+
+#### Methods
+
+- `compute(verbose=True)` — exact Shapley values via combinatorial formula (2^n coalitions)
+- `marginal_contributions()` — quick diagnostic: v({i}) - v({}) for each player
+
+### Plotting
+
+- `plot_shapley_bar(sv, labels, ...)` — bar chart colored by sign
+- `plot_shapley_pie(sv, labels, ...)` — pie chart of |SV| proportions
+- `plot_shapley_comparison(results_list, ...)` — side-by-side comparison
+- `plot_marginal_contributions(deltas, labels, ...)` — bar chart of marginals
+
+### I/O
+
+- `save_results(results, path, metadata=None)` — save to JSON
+- `load_results(path)` — load from JSON
+
+## Game theory properties
+
+The implementation satisfies all Shapley axioms:
+- **Efficiency**: sum of SVs = v(N) - v({})
+- **Symmetry**: symmetric players get equal values
+- **Null player**: non-contributing player gets SV = 0
+- **Additivity**: SV(v + w) = SV(v) + SV(w)
+
+## Tests
+
+```bash
+pip install -e ".[test]"
+pytest tests/
+```
