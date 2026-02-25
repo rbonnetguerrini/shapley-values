@@ -25,8 +25,6 @@ weights the importance of the tested coalition \(S\). It is the probability that
 
 To understand this intuitively: picking a random sequence of all players, there are many more possible coalitions in which \(i\) appears early or late in the sequence than in the middle. The weight \(w(S)\) accounts for this.
 
-## Derivation of the weight of the Shapley Values
-
 The weight of the Shapley Values can be derived as follows. Given \(|N| = n\), for a fixed player \(i\), let \(S \subseteq N \setminus \{i\}\) with \(|S| = s\). The probability that the players before \(i\) are exactly \(S\) can be decomposed into two conditions:
 
 First, \(i\) can be in any position in \(N\), so:
