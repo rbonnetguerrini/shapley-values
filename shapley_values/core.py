@@ -5,7 +5,7 @@ Problem-agnostic implementation of exact Shapley values for cooperative game the
     SV_j = sum_{S not containing j} [|S|!(n-|S|-1)!/n!] * [v(S u {j}) - v(S)]
 
 This module is model agnostic.
-The user supplies a value function and player labels; the algorithm does the rest.
+The user supplies a value function and player labels.
 """
 
 import math
@@ -32,9 +32,7 @@ def power_set(
     players : sequence of int
         Player indices (e.g. range(n)).
     num_sets : int, optional
-        If given, return a random sample of this many subsets instead
-        of the full power set. Useful for approximate SV computation
-        on large player counts.
+        If given, return a random sample of this many subsets instead of the full power set. Useful for approximate SV computation on large player counts.
 
     Returns
     -------
@@ -105,13 +103,10 @@ class ExactShapley:
     # Core computation
     # -------------------------------------------------------------------
 
-    def compute(
-        self,
-        verbose: bool = True,
-    ) -> Dict[str, object]:
+    def compute(self, verbose: bool = True) -> Dict[str, object]:
         """Compute exact Shapley values for all players.
 
-        Enumerates all 2^n coalitions and applies the combinatorial Shapley formula. Caches value function evaluations to avoid redundant calls.
+        Enumerates all 2^n coalitions and applies the combinatorial Shapley formula. Caches value function evaluations to avoid redundant computations.
 
         Parameters
         ----------
@@ -159,14 +154,14 @@ class ExactShapley:
 
             for subset in all_subsets:
                 subset = set(subset)
-                if i in subset:
+                if i in subset: # Run only on subsets that do not contain player i
                     continue
                 s = len(subset)
                 weight = (
                     math.factorial(s) * math.factorial(n - s - 1)
                 ) / math.factorial(n)
 
-                v_with = get_value(subset | {i})
+                v_with = get_value(subset | {i}) # Add player i to the coalition 
                 v_without = get_value(subset)
                 shapley_vals[i] += weight * (v_with - v_without)
 
@@ -176,15 +171,13 @@ class ExactShapley:
         elapsed = time.time() - t0
 
         if verbose:
-            sep = "-" * 60
-            print(f"\n{sep}")
             print(f"Baseline        : {baseline:.6f}")
             print(f"Max |SV|        : {np.max(np.abs(shapley_vals)):.6f}")
             print(f"Mean |SV|       : {np.mean(np.abs(shapley_vals)):.6f}")
             print(f"Sum SV          : {np.sum(shapley_vals):.6f}")
             print(f"Sum |SV|        : {np.sum(np.abs(shapley_vals)):.6f}")
             print(f"Elapsed         : {elapsed:.1f}s")
-            print(sep)
+
 
         return {
             "shapley_values": shapley_vals,
@@ -206,7 +199,7 @@ class ExactShapley:
     def marginal_contributions(self) -> Dict[str, object]:
         """Compute the marginal contribution of each player alone.
 
-        Evaluates v({i}) - v({}) for each player i. Useful as a quick diagnostic before running the full exact Shapley computation.
+        Evaluates v({i}) - v({}) for each player i. No interpretation can be found into this. Useful as a quick diagnostic before running the full exact Shapley computation.
 
         Returns
         -------

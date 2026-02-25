@@ -1,4 +1,4 @@
-"""shapley_values - Compute "exact" Shapley value as defined in game theory.
+"""shapley_values: Compute "exact" Shapley value as defined in game theory.
 
 Problem-agnostic implementation of exact Shapley values for cooperative
 game theory.

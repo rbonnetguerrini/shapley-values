@@ -66,23 +66,33 @@ pip install -e .
 ## Quick start
 
 ```python
+import numpy as np
 from shapley_values import ExactShapley, plot_shapley_bar
 
-# Define a value function: coalition (list of player indices) -> scalar
+# Toy dataset: 4 features, linear target
+np.random.seed(42)
+X = np.random.randn(100, 4)
+y = 3 * X[:, 0] + 1 * X[:, 1] + 0.5 * X[:, 2] + 0 * X[:, 3]
+
+# Value function: negative MSE using only the selected features
 def value_function(coalition):
-    """Example: each player contributes their weight."""
-    weights = [3.0, 1.0, 2.0, 4.0]
-    return sum(weights[i] for i in coalition)
+    """Return negative mean squared error for a least-squares fit."""
+    if len(coalition) == 0:
+        return -np.mean(y ** 2)
+    Xc = X[:, coalition]
+    beta = np.linalg.lstsq(Xc, y, rcond=None)[0]
+    residuals = y - Xc @ beta
+    return -np.mean(residuals ** 2)
 
 # Compute exact Shapley values
 sv = ExactShapley(
     n_players=4,
     value_function=value_function,
-    player_labels=["Alice", "Bob", "Carol", "Dave"],
+    player_labels=["x1", "x2", "x3", "x4"],
 )
 results = sv.compute()
 
-# Visualize
+# Visualize each feature's contribution to reducing prediction error
 plot_shapley_bar(results["shapley_values"], results["player_labels"])
 ```
 
