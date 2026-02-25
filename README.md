@@ -3,27 +3,51 @@
 Problem-agnostic "exact" Shapley value computation inspiring from cooperative game theory.
 
 ## Game theory background
+The original paper by Shapley (1953) can be found here: https://doi.org/10.1515/9781400881970-018
 
-The original paper by Shapley from 1953 can be find here: https://doi.org/10.1515/9781400881970-018 
+In game theory, **Shapley Values** represent the contribution of a player \(i\), denoted \(\phi_i\), within a coalition \(S\) by comparing the outcomes of scenarios where the player is present \(v(S \cup \{i\})\) versus absent \(v(S)\):
+
+$$
+\phi_i = \sum_{S \subseteq N \setminus \{i\}} w(S)\,\bigl[\, v(S \cup \{i\}) - v(S) \,\bigr].
+$$
+
+where
+
+$$
+w(S) = \frac{|S|!\, (|N| - |S| - 1)!}{|N|!},
+$$
+
+weights the importance of the tested coalition \(S\). It is the probability that the set of players who come before \(i\) is exactly \(S\).
+
+- \(|S|!\) is the number of ways to order the predecessors of \(i\)
+- \((|N| - |S| - 1)!\) is the number of ways to order the players after \(i\)
+- \(|N|!\) is the number of ways to order all players
+
+To understand this intuitively: picking a random sequence of all players, there are many more possible coalitions in which \(i\) appears early or late in the sequence than in the middle. The weight \(w(S)\) accounts for this.
 
 ## Derivation of the weight of the Shapley Values
 
 The weight of the Shapley Values can be derived as follows. Given \(|N| = n\), for a fixed player \(i\), let \(S \subseteq N \setminus \{i\}\) with \(|S| = s\). The probability that the players before \(i\) are exactly \(S\) can be decomposed into two conditions:
 
 First, \(i\) can be in any position in \(N\), so:
-\[
-p(\text{pos}_i = s+1) = \frac{1}{n}
-\]
+
+$$
+p(\text{pos}_i = s+1) = \frac{1}{n}.
+$$
 
 Second, given that \(i\) is in position \(s+1\), the \(s\) players before \(i\) form a uniformly random subset of the remaining \(n-1\) players of size \(\binom{n-1}{s}\):
-\[
-p(\text{predecessors} = S \mid \text{pos}_i = s+1) = \frac{1}{\binom{n-1}{s}}
-\]
+
+$$
+p(\text{predecessors} = S \mid \text{pos}_i = s+1) = \frac{1}{\binom{n-1}{s}}.
+$$
 
 To fulfill these conditions, we multiply these probabilities:
-\[
-\frac{1}{n}\cdot \frac{1}{\binom{n-1}{s}} = \frac{1}{n}\cdot \frac{s!(n-1-s)!}{(n-1)!} = w(S)
-\]
+
+$$
+\frac{1}{n}\cdot \frac{1}{\binom{n-1}{s}}
+= \frac{1}{n}\cdot \frac{s!(n-1-s)!}{(n-1)!}
+= w(S).
+$$
 
 # Repository 
 ## Installation
