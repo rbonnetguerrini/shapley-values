@@ -10,9 +10,11 @@ The user supplies a value function and player labels.
 
 import math
 import random
+import sys
 import time
 from itertools import combinations
 from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple, Union
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
 
@@ -103,7 +105,7 @@ class ExactShapley:
     # Core computation
     # -------------------------------------------------------------------
 
-    def compute(self, verbose: bool = True) -> Dict[str, object]:
+    def compute(self, verbose: bool = True, n_jobs: int = 1) -> Dict[str, object]:
         """Compute exact Shapley values for all players.
 
         Enumerates all 2^n coalitions and applies the combinatorial Shapley formula. Caches value function evaluations to avoid redundant computations.
@@ -112,6 +114,9 @@ class ExactShapley:
         ----------
         verbose : bool
             Print progress and results to stdout.
+        n_jobs : int
+            Number of worker threads to use for coalition evaluation.
+            If ``n_jobs=1``, computation is serial.
 
         Returns
         -------
@@ -127,46 +132,142 @@ class ExactShapley:
             value_cache : dict
                 Map from sorted coalition tuple to value.
         """
+        if int(n_jobs) < 1:
+            raise ValueError(f"n_jobs must be >= 1, got {n_jobs}")
+        n_jobs = int(n_jobs)
+
         n = self.n_players
         shapley_vals = np.zeros(n)
         all_subsets = power_set(range(n))
         value_cache: Dict[Tuple[int, ...], float] = {}
 
-        def get_value(subset: set) -> float:
-            key = tuple(sorted(subset))
-            if key not in value_cache:
-                value_cache[key] = self.value_function(list(subset))
-            return value_cache[key]
-
         t0 = time.time()
 
-        baseline = get_value(set())
+        if n_jobs == 1:
+            def get_value(subset: set) -> float:
+                key = tuple(sorted(subset))
+                if key not in value_cache:
+                    value_cache[key] = self.value_function(list(subset))
+                return value_cache[key]
 
-        if verbose:
-            print(f"Computing exact Shapley values for {n} players "
-                  f"({2**n} coalitions)...")
-            print(f"Baseline (empty coalition) = {baseline:.6f}\n")
-
-        for i in range(n):
-            if verbose:
-                print(f"  Player {i}: {self.player_labels[i]}", end="",
-                      flush=True)
-
-            for subset in all_subsets:
-                subset = set(subset)
-                if i in subset: # Run only on subsets that do not contain player i
-                    continue
-                s = len(subset)
-                weight = (
-                    math.factorial(s) * math.factorial(n - s - 1)
-                ) / math.factorial(n)
-
-                v_with = get_value(subset | {i}) # Add player i to the coalition 
-                v_without = get_value(subset)
-                shapley_vals[i] += weight * (v_with - v_without)
+            baseline = get_value(set())
 
             if verbose:
-                print(f"  ->  SV = {shapley_vals[i]:+.6f}")
+                print(f"Computing exact Shapley values for {n} players "
+                      f"({2**n} coalitions)...")
+                print(f"Baseline (empty coalition) = {baseline:.6f}\n")
+
+            for i in range(n):
+                if verbose:
+                    print(f"  Player {i}: {self.player_labels[i]}", end="",
+                          flush=True)
+
+                for subset in all_subsets:
+                    subset = set(subset)
+                    if i in subset:  # Run only on subsets that do not contain player i
+                        continue
+                    s = len(subset)
+                    weight = (
+                        math.factorial(s) * math.factorial(n - s - 1)
+                    ) / math.factorial(n)
+
+                    v_with = get_value(subset | {i})  # Add player i to the coalition
+                    v_without = get_value(subset)
+                    shapley_vals[i] += weight * (v_with - v_without)
+
+                if verbose:
+                    print(f"  ->  SV = {shapley_vals[i]:+.6f}")
+
+        else:
+            all_coalitions = [tuple(sorted(s)) for s in all_subsets]
+            full_coalition = tuple(range(n))
+            if full_coalition not in all_coalitions:
+                all_coalitions.append(full_coalition)
+
+            total_coalitions = len(all_coalitions)
+
+            if verbose:
+                print(
+                    f"Computing exact Shapley values for {n} players "
+                    f"({total_coalitions} coalitions) with {n_jobs} worker(s)..."
+                )
+
+            progress_start = time.time()
+            interactive_stderr = sys.stderr.isatty()
+            log_every = max(1, total_coalitions // 100)
+
+            def _evaluate_one(coalition: Tuple[int, ...]) -> Tuple[Tuple[int, ...], float]:
+                value = self.value_function(list(coalition))
+                return coalition, value
+
+            with ThreadPoolExecutor(max_workers=n_jobs) as executor:
+                future_map = {
+                    executor.submit(_evaluate_one, coalition): coalition
+                    for coalition in all_coalitions
+                }
+                completed = 0
+                for future in as_completed(future_map):
+                    coalition, value = future.result()
+                    value_cache[coalition] = value
+                    completed += 1
+
+                    if verbose:
+                        elapsed = time.time() - progress_start
+                        if completed == 1:
+                            msg = (
+                                f"    [{completed}/{total_coalitions}] "
+                                f"elapsed {elapsed:.0f}s ..."
+                            )
+                        else:
+                            rate = elapsed / completed
+                            remaining = rate * (total_coalitions - completed)
+                            mins, secs = divmod(int(remaining), 60)
+                            msg = (
+                                f"    [{completed}/{total_coalitions}] "
+                                f"elapsed {elapsed:.0f}s | "
+                                f"~{rate:.1f}s/eval | ETA {mins}m{secs:02d}s   "
+                            )
+                        if interactive_stderr:
+                            sys.stderr.write(f"\r{msg}")
+                            sys.stderr.flush()
+                        elif (
+                            completed == 1
+                            or completed == total_coalitions
+                            or completed % log_every == 0
+                        ):
+                            sys.stderr.write(f"{msg}\n")
+                            sys.stderr.flush()
+
+            if verbose:
+                sys.stderr.write("\n")
+                sys.stderr.flush()
+
+            baseline = value_cache[tuple()]
+
+            if verbose:
+                print(f"Baseline (empty coalition) = {baseline:.6f}\n")
+
+            for i in range(n):
+                if verbose:
+                    print(f"  Player {i}: {self.player_labels[i]}", end="",
+                          flush=True)
+
+                for subset in all_subsets:
+                    if i in subset:
+                        continue
+                    s = len(subset)
+                    weight = (
+                        math.factorial(s) * math.factorial(n - s - 1)
+                    ) / math.factorial(n)
+
+                    coalition_without = tuple(sorted(subset))
+                    coalition_with = tuple(sorted(subset | {i}))
+                    v_with = value_cache[coalition_with]
+                    v_without = value_cache[coalition_without]
+                    shapley_vals[i] += weight * (v_with - v_without)
+
+                if verbose:
+                    print(f"  ->  SV = {shapley_vals[i]:+.6f}")
 
         elapsed = time.time() - t0
 
@@ -177,7 +278,6 @@ class ExactShapley:
             print(f"Sum SV          : {np.sum(shapley_vals):.6f}")
             print(f"Sum |SV|        : {np.sum(np.abs(shapley_vals)):.6f}")
             print(f"Elapsed         : {elapsed:.1f}s")
-
 
         return {
             "shapley_values": shapley_vals,

@@ -107,20 +107,20 @@ plot_shapley_bar(results["shapley_values"], results["player_labels"])
 
 #### Methods
 
-- `compute(verbose=True)` — exact Shapley values via combinatorial formula (2^n coalitions)
-- `marginal_contributions()` — quick diagnostic: v({i}) - v({}) for each player
+- `compute(verbose=True, n_jobs=1)` : exact Shapley values via combinatorial formula (2^n coalitions). Set `n_jobs>1` to evaluate coalitions in parallel.
+- `marginal_contributions()` : quick diagnostic: v({i}) - v({}) for each player
 
 ## Plotting
 
-- `plot_shapley_bar(sv, labels, ...)` — bar chart colored by sign
-- `plot_shapley_pie(sv, labels, ...)` — pie chart of |SV| proportions
-- `plot_shapley_comparison(results_list, ...)` — side-by-side comparison
-- `plot_marginal_contributions(deltas, labels, ...)` — bar chart of marginals
+- `plot_shapley_bar(sv, labels, ...)` : bar chart colored by sign
+- `plot_shapley_pie(sv, labels, ...)` : pie chart of |SV| proportions
+- `plot_shapley_comparison(results_list, ...)` : side-by-side comparison
+- `plot_marginal_contributions(deltas, labels, ...)` : bar chart of marginals
 
 ## I/O
 
-- `save_results(results, path, metadata=None)` — save to JSON
-- `load_results(path)` — load from JSON
+- `save_results(results, path, metadata=None)` : save to JSON
+- `load_results(path)` : load from JSON
 
 ## Example notebook
 
